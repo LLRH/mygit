@@ -1,0 +1,68 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+export P4_PATH="$( readlink -f "${DIR}/.." )"
+export BMV2_PATH=$P4_PATH/onos-bmv2
+export BMV2_EXE=$BMV2_PATH/targets/simple_switch/simple_switch
+export BMV2_JSON=$P4_PATH/p4src/build/empty.json
+export BMV2_PY=$P4_PATH/mininet/bmv2.py
+
+export P4C_BM_PATH=$P4_PATH/p4c-bmv2
+export P4SRC_PATH=$P4_PATH/p4src
+
+p4c () {
+    if [ -z "$1" ]; then
+        echo "No argument supplied. Usage: p4c P4_PROGRAM_NAME"
+        return
+    fi
+
+    mkdir -p $P4SRC_PATH/build
+
+    P4SRC="$P4SRC_PATH/$1.p4"
+    P4JSON="$P4SRC_PATH/build/$1.json"
+
+    if [ ! -f $P4SRC ]
+        then
+          echo "No such file $CURR_P4SRC"
+          return
+    fi
+
+    # FIXME: p4c-bmv2 doesn't seem to work without sudo
+    sudo p4c-bmv2 --json $P4JSON $P4SRC
+}
+
+p4cli () {
+    if [ -z "$1" ]; then
+        echo "No argument supplied. Usage: p4cli THRIFT_PORT"
+        return
+    fi
+    tport=$(head -n 1 /tmp/bmv2-$1-thrift-port)
+    sudo $BMV2_PATH/tools/runtime_CLI.py --thrift-port $tport
+}
+
+p4db () {
+    if [ -z "$1" ]; then
+        echo "No argument supplied. Usage: p4db THRIFT_PORT"
+        return
+    fi
+    tport=$(head -n 1 /tmp/bmv2-$1-thrift-port)
+    sudo $BMV2_PATH/tools/p4dbg.py --thrift-port $tport
+}
+
+p4nmsg () {
+    if [ -z "$1" ]; then
+        echo "No argument supplied. Usage: p4nmsg THRIFT_PORT"
+        return
+    fi
+    tport=$(head -n 1 /tmp/bmv2-$1-thrift-port)
+    sudo $BMV2_PATH/tools/nanomsg_client.py --thrift-port $tport
+}
+
+p4log () {
+    if [ -z "$1" ]; then
+        echo "No argument supplied. Usage: p4log DEVICE_ID"
+        return
+    fi
+    tail -f /tmp/bmv2-$1.log
+}
